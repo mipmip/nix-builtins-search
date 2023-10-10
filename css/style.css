@@ -1,0 +1,55 @@
+mark {
+    padding: 0;
+    background-color: #d9edf7;
+    color: #030;
+    padding: 2px;
+    margin: -2px;
+}
+table  {
+  /*width:100%;*/
+  /*max-width:75em !important;*/
+  /*table-layout: auto !important;*/
+}
+table tr td:first-child {
+  width:15em !important;
+  white-space: nowrap !important;
+}
+table tr td:nth-child(2) {
+  width:10em !important;
+  white-space: nowrap !important;
+}
+
+table tr td:last-child {
+  /*overflow-wrap: break-word !important;*/
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+table tr.optrow:hover {
+  background-color: #e9e9e9 !important;
+}
+
+table tr.optrow {
+  cursor: pointer;
+}
+
+#lastUpdateElement{
+  font-size: 10px;
+}
+
+
+@media only screen and (max-width: 1026px) {
+  body {
+    font-size: 130%;
+  }
+  .form-control {
+    font-size: 120%;
+  }
+  #lastUpdateElement{
+    font-size: 12px;
+  }
+  .phonehide {
+    display: none;
+  }
+}
