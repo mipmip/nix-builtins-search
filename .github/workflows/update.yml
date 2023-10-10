@@ -21,7 +21,7 @@ jobs:
       - run: |
           rm -v data/builtins1.json data/builtins2.json
           nix --version
-          nix __dump-language > data/builtins1.json
+          #nix __dump-language > data/builtins1.json
           nix develop --command nix __dump-language > data/builtins1.json
           cat data/builtins1.json | nix develop --command jq '.builtins | [ to_entries[] | .value += {"title":.key} | .value]' > data/builtins2.json
 
