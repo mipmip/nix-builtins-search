@@ -10,22 +10,18 @@ jobs:
     name: parse options and create search
     steps:
 
-      - uses: actions/checkout@v2
-
-      - uses: ruby/setup-ruby@v1
+      - uses: cachix/install-nix-action@v22
         with:
-          ruby-version: 2.7
-          #bundler-cache: true
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - run: nix build
+      - run: nix flake check
 
       - run: |
-          gem install bundler
-          bundle install --jobs 4 --retry 3
+          rm -v data/builtins1.json data/builtins2.json
+          nix develop --command nix __dump-language > data/builtins1.json
+          cat data/builtins1.json | nix develop --command jq '.builtins | [ to_entries[] | .value += {"title":.key} | .value]' > data/builtins2.json
 
-      - run: |
-          rm -v data/options.json
-          ruby scripts/parse_appendix.rb
-          ls -al data/options.json
-          cat data/options.json | jq ".last_update"
+          ls -al data/
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3

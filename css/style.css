@@ -5,8 +5,25 @@ mark {
     padding: 2px;
     margin: -2px;
 }
-table tr td {
-  overflow-wrap: break-word !important;
+table  {
+  /*width:100%;*/
+  /*max-width:75em !important;*/
+  /*table-layout: auto !important;*/
+}
+table tr td:first-child {
+  width:15em !important;
+  white-space: nowrap !important;
+}
+table tr td:nth-child(2) {
+  width:10em !important;
+  white-space: nowrap !important;
+}
+
+table tr td:last-child {
+  /*overflow-wrap: break-word !important;*/
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 table tr.optrow:hover {

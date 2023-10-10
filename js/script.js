@@ -1,3 +1,123 @@
+const TAGS = {
+  '': ['<em>','</em>'],
+  _: ['<strong>','</strong>'],
+  '*': ['<strong>','</strong>'],
+  '~': ['<s>','</s>'],
+  '\n': ['<br />'],
+  ' ': ['<br />'],
+  '-': ['<hr />']
+};
+
+/** Outdent a string based on the first indented line's leading whitespace
+ *	@private
+ */
+function outdent(str) {
+  return str.replace(RegExp('^'+(str.match(/^(\t| )+/) || '')[0], 'gm'), '');
+}
+
+/** Encode special attribute characters to HTML entities in a String.
+ *	@private
+ */
+function encodeAttr(str) {
+  return (str+'').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/** Parse Markdown into an HTML String. */
+function parse(md, prevLinks) {
+  let tokenizer = /((?:^|\n+)(?:\n---+|\* \*(?: \*)+)\n)|(?:^``` *(\w*)\n([\s\S]*?)\n```$)|((?:(?:^|\n+)(?:\t|  {2,}).+)+\n*)|((?:(?:^|\n)([>*+-]|\d+\.)\s+.*)+)|(?:!\[([^\]]*?)\]\(([^)]+?)\))|(\[)|(\](?:\(([^)]+?)\))?)|(?:(?:^|\n+)([^\s].*)\n(-{3,}|={3,})(?:\n+|$))|(?:(?:^|\n+)(#{1,6})\s*(.+)(?:\n+|$))|(?:`([^`].*?)`)|(  \n\n*|\n{2,}|__|\*\*|[_*]|~~)/gm,
+    context = [],
+    out = '',
+    links = prevLinks || {},
+    last = 0,
+    chunk, prev, token, inner, t;
+
+  function tag(token) {
+    let desc = TAGS[token[1] || ''];
+    let end = context[context.length-1] == token;
+    if (!desc) return token;
+    if (!desc[1]) return desc[0];
+    if (end) context.pop();
+    else context.push(token);
+    return desc[end|0];
+  }
+
+  function flush() {
+    let str = '';
+    while (context.length) str += tag(context[context.length-1]);
+    return str;
+  }
+
+  md = md.replace(/^\[(.+?)\]:\s*(.+)$/gm, (s, name, url) => {
+    links[name.toLowerCase()] = url;
+    return '';
+  }).replace(/^\n+|\n+$/g, '');
+
+  while ( (token=tokenizer.exec(md)) ) {
+    prev = md.substring(last, token.index);
+    last = tokenizer.lastIndex;
+    chunk = token[0];
+    if (prev.match(/[^\\](\\\\)*\\$/)) {
+      // escaped
+    }
+    // Code/Indent blocks:
+    else if (t = (token[3] || token[4])) {
+      chunk = '<pre class="code '+(token[4]?'poetry':token[2].toLowerCase())+'"><code'+(token[2] ? ` class="language-${token[2].toLowerCase()}"` : '')+'>'+outdent(encodeAttr(t).replace(/^\n+|\n+$/g, ''))+'</code></pre>';
+    }
+    // > Quotes, -* lists:
+    else if (t = token[6]) {
+      if (t.match(/\./)) {
+        token[5] = token[5].replace(/^\d+/gm, '');
+      }
+      inner = parse(outdent(token[5].replace(/^\s*[>*+.-]/gm, '')));
+      if (t=='>') t = 'blockquote';
+      else {
+        t = t.match(/\./) ? 'ol' : 'ul';
+        inner = inner.replace(/^(.*)(\n|$)/gm, '<li>$1</li>');
+      }
+      chunk = '<'+t+'>' + inner + '</'+t+'>';
+    }
+    // Images:
+    else if (token[8]) {
+      chunk = `<img src="${encodeAttr(token[8])}" alt="${encodeAttr(token[7])}">`;
+    }
+    // Links:
+    else if (token[10]) {
+      out = out.replace('<a>', `<a href="${encodeAttr(token[11] || links[prev.toLowerCase()])}">`);
+      chunk = flush() + '</a>';
+    }
+    else if (token[9]) {
+      chunk = '<a>';
+    }
+    // Headings:
+    else if (token[12] || token[14]) {
+      t = 'h' + (token[14] ? token[14].length : (token[13]>'=' ? 1 : 2));
+      chunk = '<'+t+'>' + parse(token[12] || token[15], links) + '</'+t+'>';
+    }
+    // `code`:
+    else if (token[16]) {
+      chunk = '<code>'+encodeAttr(token[16])+'</code>';
+    }
+    // Inline formatting: *em*, **strong** & friends
+    else if (token[17] || token[1]) {
+      chunk = tag(token[17] || '--');
+    }
+    out += prev;
+    out += chunk;
+  }
+
+  return (out + md.substring(last) + flush()).replace(/^\n+|\n+$/g, '');
+}
+
+
+
+
+
+
+
+
+
+
+
 var search, results, allOptions, currentSet = [];
 var lastUpdate = "?";
 
@@ -19,7 +139,7 @@ var docOnload = function(){
   searchOptions(query);
 
   $("#advcheck").prop("checked", false);
-//  $("#advcheck").removeAttr("checked");
+  //  $("#advcheck").removeAttr("checked");
 }
 
 indexOnDescriptionCheckbox.onchange = rebuildAndRerunSearch;
@@ -65,13 +185,12 @@ var updateOptionsTable = function(options) {
     var titleColumn = document.createElement('td');
     titleColumn.innerHTML = option.title;
 
-    var descriptionColumn = document.createElement('td');
-    descriptionColumn.innerHTML = option.description;
-    descriptionColumn.classList.add("phonehide");
+    var argsColumn = document.createElement('td');
+    argsColumn.innerHTML = option.args.join(", ");
 
-    var typeColumn = document.createElement('td');
-    typeColumn.innerHTML = option.type;
-    typeColumn.classList.add("phonehide");
+    var descriptionColumn = document.createElement('td');
+    descriptionColumn.innerHTML = option.doc;
+    descriptionColumn.classList.add("phonehide");
 
     var tableRow = document.createElement('tr');
 
@@ -85,12 +204,12 @@ var updateOptionsTable = function(options) {
 
 
     var att2 = document.createAttribute("style");
-    att2.value = "overflow-wrap: break-word";
+    //att2.value = "overflow-wrap: break-word";
     titleColumn.setAttributeNode(att2);
 
     tableRow.appendChild(titleColumn);
+    tableRow.appendChild(argsColumn);
     tableRow.appendChild(descriptionColumn);
-    tableRow.appendChild(typeColumn);
 
     indexedOptionsTBody.appendChild(tableRow);
   }
@@ -100,17 +219,18 @@ var expandOption = function(el){
 
   modalTitle.innerHTML = currentSet[el].title;
 
-  var elDesc = "<h5 style='margin:1em 0 0 0'>Description</h5><div>" + currentSet[el].description + "</div>";
-  var elType = "<h5 style='margin:1em 0 0 0'>Type</h5><div>" + currentSet[el].type + "</div>";
-  var elNote = ( currentSet[el].note == "" ? "": "<h5 style='margin:1em 0 0 0'>Note</h5><div>" + currentSet[el].note + "</div>");
-  var elDefault = "<h5 style='margin:1em 0 0 0'>Default</h5><div><pre style='margin-top:0.5em'>" + currentSet[el].default + "</pre></div>";
-  var elExample = ( currentSet[el].example == "" ? "" : "<h5 style='margin:1em 0 0 0'>Example</h5><div><pre style='margin-top:0.5em'>" + currentSet[el].example + "</pre></div>");
-
-  var declared_by_str = currentSet[el].declared_by;
-
-  var elDeclaredBy = "<h5 style='margin:1em 0 0 0'>Declared by</h5><div>" + declared_by_str+ "</div>";
-  modalBody.innerHTML = elDesc + elNote + elType + elDefault + elExample + elDeclaredBy;
-
+  let dhtml = parse(currentSet[el].doc);
+  var elDesc = "<h5 style='margin:1em 0 0 0'>Description</h5><div>" + dhtml  + "</div>";
+  var elArgs = "<h5 style='margin:1em 0 0 0'>Args</h5><div>" + currentSet[el].args.join(', ') + "</div>";
+  //  var elNote = ( currentSet[el].note == "" ? "": "<h5 style='margin:1em 0 0 0'>Note</h5><div>" + currentSet[el].note + "</div>");
+  //  var elDefault = "<h5 style='margin:1em 0 0 0'>Default</h5><div><pre style='margin-top:0.5em'>" + currentSet[el].default + "</pre></div>";
+  //  var elExample = ( currentSet[el].example == "" ? "" : "<h5 style='margin:1em 0 0 0'>Example</h5><div><pre style='margin-top:0.5em'>" + currentSet[el].example + "</pre></div>");
+  //
+  //  var declared_by_str = currentSet[el].declared_by;
+  //
+  //  var elDeclaredBy = "<h5 style='margin:1em 0 0 0'>Declared by</h5><div>" + declared_by_str+ "</div>";
+  //  modalBody.innerHTML = elDesc + elNote + elType + elDefault + elExample + elDeclaredBy;
+  modalBody.innerHTML = elDesc + elArgs;
 
   $('#myModal').modal('show')
 }
@@ -147,7 +267,7 @@ searchInput.oninput =  function () {
 }
 
 var updateOptionCount = function(numOptions) {
-  optionCountBadge.innerText = numOptions + ' options';
+  optionCountBadge.innerText = numOptions + ' functions';
 };
 var hideElement  = function(element) {
   element.className += ' hidden';
@@ -161,8 +281,8 @@ xmlhttp.onreadystatechange = function() {
   if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
     var json = JSON.parse(xmlhttp.responseText);
 
-    allOptions = json.options;
-    lastUpdate = json.last_update;
+    allOptions = json;
+    lastUpdate = "unknown";//json.last_update;
     updateLastUpdate(lastUpdate);
 
     updateOptionCount(allOptions.length);
@@ -181,5 +301,5 @@ xmlhttp.onreadystatechange = function() {
 
   }
 }
-xmlhttp.open('GET', 'data/options.json', true);
+xmlhttp.open('GET', 'data/builtins2.json', true);
 xmlhttp.send();
