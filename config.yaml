@@ -1,0 +1,70 @@
+baseURL: https://nix-builtins-search.extranix.com/
+languageCode: en-us
+title: Nix Builtins Search
+theme: extranix-options-search
+
+params:
+
+  useMarkdownParser: true
+
+  release_current_stable: nix-v2.18
+  releases:
+    - name: nix v2.24
+      value: nix-v2.24
+
+    - name: nix v2.23
+      value: nix-v2.23
+
+    - name: nix v2.22
+      value: nix-v2.22
+
+    - name: nix v2.21
+      value: nix-v2.21
+
+    - name: nix v2.20
+      value: nix-v2.20
+
+    - name: nix v2.19
+      value: nix-v2.19
+
+    - name: nix v2.18
+      value: nix-v2.18
+
+  release_switch_title: Nix version
+
+  xcustom_head_scripts: |
+    <script async src="https://umami.pimsnel.com/script.js" data-website-id="e46072c3-c9e0-46cf-adfe-b05365ccb990"></script>
+    <script async src="https://media.ethicalads.io/media/client/ethicalads.min.js"></script>
+
+  custom_header_tags: <div id="eadiv" data-ea-publisher="extranixcom" data-ea-type="text"></div>
+
+  footer_credits_line: |
+    Powered by <a href="https://github.com/NixOS/nix">Nix</a> |
+    <a href="https://github.com/mipmip/nix-builtins-search?tab=readme-ov-file#credits">Credits</a> |
+    <a href="https://nix.dev/reference/nix-manual">Nix Documentation</a>
+
+  footer_copyright_line: |
+    Made with ❤️ by <a href="https://github.com/mipmip">Pim Snel</a> - © 2022-2024
+
+  logo: images/nix-builtins-search2.png
+
+  github:
+    repo: nix-builtins-search
+    user: mipmip
+    show_count: true
+    show_text: true
+
+  main_menu:
+
+    - name: Nix&nbsp;Documentation
+      url: https://nix.dev/reference/nix-manual
+      icon_class: fa fa-book
+
+    - name: Source
+      url: https://github.com/mipmip/nix-builtins-search
+      icon_class: fa fa-github
+
+markup:
+  goldmark:
+    renderer:
+      unsafe: true

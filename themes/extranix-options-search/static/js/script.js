@@ -1,3 +1,8 @@
+
+/***********************************************
+ * MARKDOWN Parser for Builtins
+ */
+
 const TAGS = {
   '': ['<em>','</em>'],
   _: ['<strong>','</strong>'],
@@ -23,7 +28,7 @@ function encodeAttr(str) {
 }
 
 /** Parse Markdown into an HTML String. */
-function parse(md, prevLinks) {
+function parseMD(md, prevLinks) {
   let tokenizer = /((?:^|\n+)(?:\n---+|\* \*(?: \*)+)\n)|(?:^``` *(\w*)\n([\s\S]*?)\n```$)|((?:(?:^|\n+)(?:\t|  {2,}).+)+\n*)|((?:(?:^|\n)([>*+-]|\d+\.)\s+.*)+)|(?:!\[([^\]]*?)\]\(([^)]+?)\))|(\[)|(\](?:\(([^)]+?)\))?)|(?:(?:^|\n+)([^\s].*)\n(-{3,}|={3,})(?:\n+|$))|(?:(?:^|\n+)(#{1,6})\s*(.+)(?:\n+|$))|(?:`([^`].*?)`)|(  \n\n*|\n{2,}|__|\*\*|[_*]|~~)/gm,
     context = [],
     out = '',
@@ -109,17 +114,18 @@ function parse(md, prevLinks) {
 }
 
 
-
-
-
-
-
-
-
+/*************************
+ * END MARKDOWN PARSER
+  */
 
 
 var search, results, allOptions, currentSet = [];
 var lastUpdate = "?";
+
+const useMarkdownParserEl = document.getElementById('useMarkdownParser');
+if (useMarkdownParserEl) {
+  var useMarkdownParser = useMarkdownParserEl.value
+}
 
 var indexOnDescriptionCheckbox = document.getElementById('indexOnDescriptionCheckbox');
 var indexOnTitleCheckbox = document.getElementById('indexOnTitleCheckbox');
@@ -129,17 +135,22 @@ var modalBody = document.getElementById('myModalBody');
 
 var rebuildAndRerunSearch = function() {
   rebuildSearchIndex();
-  searchOptions();
+  searchOptions('');
 };
 
+
+
+
+
 var docOnload = function(){
+
   const urlParams = new URLSearchParams(window.location.search);
-  const query = urlParams.get('query');
+  const query = urlParams.get('query') ?? '';
+
   searchInput.value = query;
   searchOptions(query);
 
   $("#advcheck").prop("checked", false);
-  //  $("#advcheck").removeAttr("checked");
 }
 
 indexOnDescriptionCheckbox.onchange = rebuildAndRerunSearch;
@@ -147,7 +158,7 @@ indexOnTitleCheckbox.onchange = rebuildAndRerunSearch;
 indexStrategySelect.onchange = rebuildAndRerunSearch;
 
 var rebuildSearchIndex = function() {
-  search = new JsSearch.Search('description');
+  search = new JsSearch.Search('title');
 
   search.indexStrategy =  eval('new ' + indexStrategySelect.value + '()');
   search.searchIndex = new JsSearch.UnorderedSearchIndex();
@@ -167,10 +178,11 @@ var indexedOptionsTableHeader = document.getElementById('indexedOptionsTableHead
 var lastUpdateElement = document.getElementById('lastUpdateElement');
 var indexedOptionsTBody = indexedOptionsTable.tBodies[0];
 var searchInput = document.getElementById('searchInput');
+var releaseSelect = document.getElementById('releaseSelect');
 var optionCountBadge = document.getElementById('optionCountBadge');
 
 var updateLastUpdate = function(lastUpdate) {
-  lastUpdateElement.innerHTML = 'Last update: '+ lastUpdate;
+  lastUpdateElement.textContent = 'Last update: '+ lastUpdate;
 };
 
 var updateOptionsTable = function(options) {
@@ -183,43 +195,80 @@ var updateOptionsTable = function(options) {
     var option = options[i];
 
     var titleColumn = document.createElement('td');
-    titleColumn.innerHTML = option.title;
-
-    var argsColumn = document.createElement('td');
-    argsColumn.innerHTML = option.args.join(", ");
+    titleColumn.textContent = option.title;
 
     var descriptionColumn = document.createElement('td');
-    descriptionColumn.innerHTML = option.doc;
+    descriptionColumn.textContent = option.description;
     descriptionColumn.classList.add("phonehide");
+
+    var typeColumn = document.createElement('td');
+    typeColumn.textContent = option.type;
+    typeColumn.classList.add("phonehide");
 
     var tableRow = document.createElement('tr');
 
     var att = document.createAttribute("onClick");
-    att.value = "expandOption("+i+")";
+
+    if(useMarkdownParser ==="true") {
+      att.value = "expandOptionMD("+i+")";
+    }
+    else{
+      att.value = "expandOption("+i+")";
+    }
+
     tableRow.setAttributeNode(att);
 
     var att1 = document.createAttribute("class");
     att1.value = "optrow";
     tableRow.setAttributeNode(att1);
 
+    var att2 = document.createAttribute("tabindex");
+    att2.value = "0";
+    tableRow.setAttributeNode(att2);
 
-    var att2 = document.createAttribute("style");
-    //att2.value = "overflow-wrap: break-word";
-    titleColumn.setAttributeNode(att2);
+    tableRow.onkeydown = function(e) {
+      if (e.keyCode == 13) {
+        tableRow.click();
+      };
+    };
+
+    var att3 = document.createAttribute("style");
+    att3.value = "overflow-wrap: break-word";
+    titleColumn.setAttributeNode(att3);
 
     tableRow.appendChild(titleColumn);
-    tableRow.appendChild(argsColumn);
     tableRow.appendChild(descriptionColumn);
+    tableRow.appendChild(typeColumn);
 
     indexedOptionsTBody.appendChild(tableRow);
   }
 };
 
-var expandOption = function(el){
+
+
+
+
+
+
+
+
+
+
+function parseDescription(text){
+
+  text = text.replace(/<https(\s*([^>]*))/gi ,'<a href="https$1">&lt;https$1</a>');
+  text = text.replace(/\[\]\(#opt-(\s*([^)]*))/gi ,'<strong>$1</strong>').replace(/\)/gi,'');
+  //[](#opt-wayland.windowManager.hyprland.plugins)
+  text = text.replace(/\{var\}(\s*([^\n]*))/gi ,'<strong>$1</strong>').replace(/`/gi,'')
+  text = text.replace(/:::\ \{\.note\}(\s*([^:::]*))/gi ,'<div class="alert alert-info" role="alert">$1</div>').replace(/:::/,'').replace(/\n/g, '<br />')
+  return text;
+}
+
+var expandOptionMD = function(el){
 
   modalTitle.innerHTML = currentSet[el].title;
 
-  let dhtml = parse(currentSet[el].doc);
+  let dhtml = parseMD(currentSet[el].doc);
   var elDesc = "<h5 style='margin:1em 0 0 0'>Description</h5><div>" + dhtml  + "</div>";
   var elArgs = "<h5 style='margin:1em 0 0 0'>Args</h5><div>" + currentSet[el].args.join(', ') + "</div>";
   //  var elNote = ( currentSet[el].note == "" ? "": "<h5 style='margin:1em 0 0 0'>Note</h5><div>" + currentSet[el].note + "</div>");
@@ -231,6 +280,31 @@ var expandOption = function(el){
   //  var elDeclaredBy = "<h5 style='margin:1em 0 0 0'>Declared by</h5><div>" + declared_by_str+ "</div>";
   //  modalBody.innerHTML = elDesc + elNote + elType + elDefault + elExample + elDeclaredBy;
   modalBody.innerHTML = elDesc + elArgs;
+
+  $('#myModal').modal('show')
+}
+
+var expandOption = function(el){
+
+  modalTitle.textContent = currentSet[el].title;
+
+  //console.log(currentSet[el].description.replace(/:::\ \{\.note\}(\s*([^:::]*))/gi ,'<div class="alert alert-info" role="alert">$1</div>').replace(/:::/,''));
+
+  var elDesc = "<h5 style='margin:1em 0 0 0'>Description</h5><div>" + parseDescription(currentSet[el].description) + "</div>";
+  var elType = "<h5 style='margin:1em 0 0 0'>Type</h5><div>" + currentSet[el].type + "</div>";
+  //var elNote = ( currentSet[el].note == "" ? "": "<h5 style='margin:1em 0 0 0'>Note</h5><div>" + currentSet[el].note + "</div>");
+  var elDefault = "<h5 style='margin:1em 0 0 0'>Default</h5><div><pre style='margin-top:0.5em'>" + currentSet[el].default + "</pre></div>";
+  var elExample = ( currentSet[el].example == "" ? "" : "<h5 style='margin:1em 0 0 0'>Example</h5><div><pre style='margin-top:0.5em'>" + currentSet[el].example + "</pre></div>");
+
+  //var declared_by_str = currentSet[el].declarations[0].name;
+  //console.log(currentSet[el].declarations[0].name);
+  var declared_by_str;
+  if(currentSet[el].declarations && currentSet[el].declarations.length >0 && currentSet[el].declarations[0].name){
+    declared_by_str = '<a href="'+currentSet[el].declarations[0].url+'">'+currentSet[el].declarations[0].name.replace(/</,'&lt;').replace(/>/,'&gt;')+'</a>';
+  }
+
+  var elDeclaredBy = "<h5 style='margin:1em 0 0 0'>Declared by</h5><div>" + declared_by_str+ "</div>";
+  modalBody.innerHTML = elDesc + elType + elDefault + elExample + elDeclaredBy;
 
   $('#myModal').modal('show')
 }
@@ -248,26 +322,97 @@ var updateOptionCountAndTable = function() {
   }
 };
 
-var setSearchQueryToUrlParam = function(query) {
+var newUrl = '';
+
+var setSearchQueryToUrlParam = function(query,release) {
   const urlParams = new URLSearchParams();
   urlParams.set('query', query);
-  const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
+  newUrl = `${window.location.pathname}?${urlParams.toString()}&release=${release}`;
   window.history.replaceState({}, '', newUrl);
 };
 
 var searchOptions = function(query) {
   results = search.search(query);
+
+  // Performance optimization: skip ordering if query is a single character
+  if (query.length > 1) {
+    // Split terms by non-alphanumeric chars
+    const terms = query.split(/[^A-Za-z0-9]/);
+
+    results.sort((a, b) => {
+      // Concatenate to sort first by occurence in title, then description.
+      const aConcat = a.title + a.description;
+      const bConcat = b.title + b.description;
+
+      // We store last found index, to order based on remaining string.
+      // This assumes that terms are written in the order that the user
+      // expects them to appear in the title + description.
+      var lastIndex = 0;
+
+      for (var i = 0; i < terms.length; i++) {
+        const term = terms[i];
+        const aIndex = aConcat.slice(lastIndex).indexOf(term);
+
+        // Not found in a, b must come first
+        if (aIndex == -1) return 1;
+
+        // No reason to index beyond result of lastIndex +aIndex + term.length,
+        // as a would come first in that case.
+        const bIndex = bConcat
+        .slice(lastIndex, lastIndex + aIndex + term.length)
+        .indexOf(term);
+
+        // Not found in b, a must come first
+        if (bIndex == -1) return -1;
+        if (aIndex !== bIndex) return aIndex - bIndex
+
+        // Increment lastIndex by found index and term length, to sort based
+        // on remaining string.
+        lastIndex += aIndex + term.length;
+      }
+
+      // Default to alphabetical order otherwise
+      return aConcat.localeCompare(bConcat);
+    });
+  }
+
   updateOptionCountAndTable();
 };
 
-searchInput.oninput =  function () {
+const SEARCH_INPUT_DEBOUNCE_MS = 100;
+
+let debounceTimer;
+
+
+function newSearch(){
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+
+    const query = searchInput.value;
+    const release = releaseSelect.selectedOptions[0].value;
+
+    setSearchQueryToUrlParam(query, release);
+    searchOptions(query);
+
+  }, SEARCH_INPUT_DEBOUNCE_MS);
+}
+
+searchInput.oninput = function() {
+  newSearch();
+};
+
+releaseSelect.onchange = function(){
+
   const query = searchInput.value;
-  setSearchQueryToUrlParam(query);
-  searchOptions(query);
+  const release = releaseSelect.selectedOptions[0].value;
+
+  setSearchQueryToUrlParam(query, release);
+
+  window.location.replace(newUrl);
 }
 
 var updateOptionCount = function(numOptions) {
-  optionCountBadge.innerText = numOptions + ' functions';
+  optionCountBadge.innerText = numOptions + ' options';
 };
 var hideElement  = function(element) {
   element.className += ' hidden';
@@ -282,7 +427,7 @@ xmlhttp.onreadystatechange = function() {
     var json = JSON.parse(xmlhttp.responseText);
 
     allOptions = json;
-    lastUpdate = "unknown";//json.last_update;
+    lastUpdate = json.last_update;
     updateLastUpdate(lastUpdate);
 
     updateOptionCount(allOptions.length);
@@ -297,9 +442,15 @@ xmlhttp.onreadystatechange = function() {
     if(searchInput.value.trim() ==""){
       updateOptionsTable(allOptions);
     }
-
-
   }
 }
-xmlhttp.open('GET', 'data/builtins2.json', true);
+
+const urlParams = new URLSearchParams(window.location.search);
+
+const releaseCurrentStable = document.getElementById('release_current_stable').value;
+
+var release = urlParams.get('release') ?? releaseCurrentStable;
+document.getElementById('releaseSelect').value = release;
+
+xmlhttp.open('GET', 'data/options-'+release+'.json', true);
 xmlhttp.send();

@@ -1,8 +1,9 @@
 name: "parse and deploy"
 on:
-  schedule:
-    - cron:  '05 4 * * *'
+  #schedule:
+  #  - cron:  '05 4 * * *'
   push:
+
 
 jobs:
   build:
@@ -12,23 +13,25 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - uses: cachix/install-nix-action@v22
-        with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-        #- run: nix build
-        #- run: nix flake check
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: update gitignore
+        run: echo result > .gitignore
 
       - run: |
-          rm -v data/builtins1.json data/builtins2.json
           nix --version
-          #nix __dump-language > data/builtins1.json
-          nix develop --command nix __dump-language > data/builtins1.json
-          cat data/builtins1.json | nix develop --command jq '.builtins | [ to_entries[] | .value += {"title":.key} | .value]' > data/builtins2.json
 
-          ls -al data/
+          #nix run nixpkgs\#nixVersions.nix_2_24 -- __dump-language | nix run nixpkgs#jq -- '[ to_entries[] | .value += {"title":.key} | .value]' > data/builtins-2.24.json
+          #nix run nixpkgs\#nixVersions.nix_2_18 -- __dump-language | nix run nixpkgs#jq -- '.builtins | [ to_entries[] | .value += {"title":.key} | .value]' > data/builtins-2.18.json
+
+      - name: Build Hugo
+        run: nix run nixpkgs#hugo -- --minify
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: .
+#          publish_branch: pages-${{ github.ref_name }}
+          publish_dir: ./public
+
