@@ -32,7 +32,7 @@ params:
 
   release_switch_title: Nix version
 
-  xcustom_head_scripts: |
+  custom_head_scripts: |
     <script async src="https://umami.pimsnel.com/script.js" data-website-id="e46072c3-c9e0-46cf-adfe-b05365ccb990"></script>
     <script async src="https://media.ethicalads.io/media/client/ethicalads.min.js"></script>
 
