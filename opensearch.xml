@@ -3,6 +3,6 @@
   <Description>Find Builtin Nix Functions quickly.</Description>
   <InputEncoding>UTF-8</InputEncoding>
   <Image width="16" height="16" type="image/x-icon">https://nix-builtins-search.extranix.com/images/favicon.png</Image>
-  <Url type="text/html" template="https://home-manager-options.extranix.com/?query={searchTerms}"/>
+  <Url type="text/html" template="https://nix-builtins-search.extranix.com/?query={searchTerms}"/>
   <moz:SearchForm>https://nix-builtins-search.extranix.com/</moz:SearchForm>
 </OpenSearchDescription>
