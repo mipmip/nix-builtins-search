@@ -1,7 +1,7 @@
 baseURL: https://nix-builtins-search.extranix.com/
 languageCode: en-us
 title: Nix Builtins Search
-theme: extranix-options-search2
+theme: extranix-options-search
 
 params:
 
