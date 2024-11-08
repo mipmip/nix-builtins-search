@@ -22,8 +22,8 @@ jobs:
       - run: |
           nix --version
 
-          #nix run nixpkgs\#nixVersions.nix_2_24 -- __dump-language | nix run nixpkgs#jq -- '[ to_entries[] | .value += {"title":.key} | .value]' > data/builtins-2.24.json
-          #nix run nixpkgs\#nixVersions.nix_2_18 -- __dump-language | nix run nixpkgs#jq -- '.builtins | [ to_entries[] | .value += {"title":.key} | .value]' > data/builtins-2.18.json
+          #nix run nixpkgs\#nixVersions.nix_2_24 -- __dump-language | nix run nixpkgs#jq -- '[ to_entries[] | .value += {"title":.key} | .value] | { "options": .}' > data/builtins-2.24.json
+          #nix run nixpkgs\#nixVersions.nix_2_18 -- __dump-language | nix run nixpkgs#jq -- '.builtins | [ to_entries[] | .value += {"title":.key} | .value] | { "options": .}' > data/builtins-2.18.json
 
       - name: Build Hugo
         run: nix run nixpkgs#hugo -- --minify
